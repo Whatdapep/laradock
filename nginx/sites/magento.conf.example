@@ -1,0 +1,159 @@
+server {
+  listen 80;
+  listen [::]:80;
+      ssl_certificate /etc/nginx/ssl/magento.test.crt;
+    ssl_certificate_key /etc/nginx/ssl/magento.test.key;
+  server_name magento.test;
+  root /var/www/magento.test/pub;
+
+  location /static/ {
+    location ~ ^/static/version {
+      rewrite ^/static/(version\d*/)?(.*)$ /static/$2 last;
+    }
+    location ~* \.(ico|jpg|jpeg|png|gif|svg|js|json|css|swf|eot|ttf|otf|woff|woff2|html)$ {
+      add_header Access-Control-Allow-Origin "*";
+      expires max;
+      access_log off;
+      if (!-f $request_filename) {
+        rewrite ^/static/(version\d*/)?(.*)$ /static.php?resource=$2 last;
+        rewrite ^/static/(.*)$ /static.php?resource=$1 last;
+      }
+    }
+  }
+
+  location ~/media/ {
+    add_header Access-Control-Allow-Origin "*";
+    expires max;
+    try_files $uri $uri/ /get.php$is_args$args;
+  }
+  
+  location / {
+    set             $MAGE_RUN_CODE th;
+    try_files       $uri $uri/ /index.php$is_args$args;
+  }
+
+  location /en/ {
+    set             $MAGE_RUN_CODE en;
+    try_files       $uri $uri/ /en/index.php$is_args$args;
+  }
+
+  #try_files $uri $uri/ /index.php?$args;
+  index index.php index.html;
+
+  location ~ \.php$ {
+    include fastcgi_params;
+    fastcgi_intercept_errors on;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    try_files $uri =404;
+    fastcgi_read_timeout 3600;
+    fastcgi_send_timeout 3600;
+    fastcgi_param HTTPS "on";
+    #fastcgi_param MAGE_RUN_CODE "store_code";
+    #fastcgi_param MAGE_RUN_TYPE "website";
+    fastcgi_pass 127.0.0.1:9740;
+    fastcgi_param PHP_VALUE "
+    error_log=/var/logs/magento.test/php/error.log;;
+    memory_limit=512M;
+    max_execution_time=60s;
+    max_input_time=60s;
+    post_max_size=64M;
+    upload_max_filesize=64M;
+    date.timezone=Europe/Berlin;
+    display_errors=off;";
+  }
+
+  location ~* ^.+\.(css|js|jpg|jpeg|gif|png|ico|gz|svg|svgz|ttf|otf|woff|eot|mp4|ogg|ogv|webm|webp|zip|swf)$ {
+    add_header Access-Control-Allow-Origin "*";
+    expires max;
+    access_log off;
+  }
+
+  if (-f $request_filename) {
+    break;
+  }
+}
+
+server {
+  listen 8080;
+  listen [::]:8080;
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+    ssl_certificate /etc/nginx/ssl/magento.test.crt;
+    ssl_certificate_key /etc/nginx/ssl/magento.test.key;
+server_name magento.test;
+  root /var/www/magento.test/pub;
+
+  access_log /home/cloudpanel/logs/magento.test/nginx/access.log;
+  error_log /home/cloudpanel/logs/magento.test/nginx/error.log;
+
+  if ($scheme != "https") {
+  return 200 $scheme;
+    rewrite ^ https://$host$uri permanent;
+  }
+
+  
+
+  location /media/ {
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header Host $host;
+    proxy_set_header HTTPS "off";
+    proxy_pass http://127.0.0.1:8080;
+    proxy_hide_header Via;
+    proxy_hide_header Vary;
+    proxy_hide_header X-Server;
+    #proxy_hide_header X-Backend-Server;
+    proxy_max_temp_file_size 0;
+    proxy_connect_timeout      7200;
+    proxy_send_timeout         7200;
+    proxy_read_timeout         7200;
+    proxy_buffer_size          128k;
+    proxy_buffers              4 256k;
+    proxy_busy_buffers_size    256k;
+    proxy_temp_file_write_size 256k;
+  }
+  
+  location /en/media/ {
+    rewrite ^/en/media/(.*)$ /media/$1;
+  }
+  location /en/static/ {
+    rewrite ^/en/static/(.*)$ /static/$1;
+  }
+
+  location / {
+    location ~ ^/static/version {
+      rewrite ^/static/(version\d*/)?(.*)$ /static/$2 last;
+    }
+    location ~* \.(ico|jpg|jpeg|png|gif|svg|js|css|swf|eot|ttf|otf|woff|woff2|html|json)$ {
+      add_header Access-Control-Allow-Origin "*";
+      expires max;
+      access_log off;
+      if (!-f $request_filename) {
+         proxy_pass http://127.0.0.1:6081;
+         #proxy_pass http://127.0.0.1:8080;
+      }
+    }
+    #proxy_pass http://127.0.0.1:6081;
+    #proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_hide_header Via;
+    proxy_hide_header Vary;
+    proxy_hide_header X-Server;
+    proxy_hide_header X-Backend-Server;
+    proxy_hide_header X-Frame-Options;
+    proxy_redirect off;
+    proxy_max_temp_file_size 0;
+    proxy_connect_timeout      720;
+    proxy_send_timeout         720;
+    proxy_read_timeout         720;
+    proxy_buffer_size          128k;
+    proxy_buffers              4 256k;
+    proxy_busy_buffers_size    256k;
+    proxy_temp_file_write_size 256k;
+  }
+}
