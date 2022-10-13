@@ -7,6 +7,7 @@ networks:
     driver: ${NETWORKS_DRIVER}
   traefik_web:
     external: true
+    driver: ${NETWORKS_DRIVER}
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
