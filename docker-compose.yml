@@ -6,7 +6,7 @@ networks:
   backend:
     driver: ${NETWORKS_DRIVER}
   traefik_web:
-    external: true
+    # external: true
     driver: ${NETWORKS_DRIVER}
 volumes:
   # mysql:
@@ -1222,25 +1222,25 @@ services:
     networks:
       - frontend
 
-  # proxy2:
-  #   container_name: proxy2
-  #   build: ./varnish
-  #   expose:
-  #     - ${VARNISH_PORT}
-  #   environment:
-  #     - VARNISH_CONFIG=${VARNISH_CONFIG}
-  #     - CACHE_SIZE=${VARNISH_PROXY2_CACHE_SIZE}
-  #     - VARNISHD_PARAMS=${VARNISHD_PARAMS}
-  #     - VARNISH_PORT=${VARNISH_PORT}
-  #     - BACKEND_HOST=${VARNISH_PROXY2_BACKEND_HOST}
-  #     - BACKEND_PORT=${VARNISH_BACKEND_PORT}
-  #     - VARNISH_SERVER=${VARNISH_PROXY2_SERVER}
-  #   ports:
-  #     - "${VARNISH_PORT}:${VARNISH_PORT}"
-  #   links:
-  #     - workspace
-  #   networks:
-  #     - frontend
+  proxy2:
+    container_name: proxy2
+    build: ./varnish
+    expose:
+      - ${VARNISH_PORT}
+    environment:
+      - VARNISH_CONFIG=${VARNISH_CONFIG}
+      - CACHE_SIZE=${VARNISH_PROXY2_CACHE_SIZE}
+      - VARNISHD_PARAMS=${VARNISHD_PARAMS}
+      - VARNISH_PORT=${VARNISH_PORT}
+      - BACKEND_HOST=${VARNISH_PROXY2_BACKEND_HOST}
+      - BACKEND_PORT=${VARNISH_BACKEND_PORT}
+      - VARNISH_SERVER=${VARNISH_PROXY2_SERVER}
+    ports:
+      - "${VARNISH_PORT}:${VARNISH_PORT}"
+    links:
+      - workspace
+    networks:
+      - frontend
 
   ### HAProxy ####################################
   haproxy:
@@ -1251,23 +1251,23 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     links:
       - proxy
-      # - proxy2
+      - proxy2
 
   ### Jenkins ###################################################
-  # jenkins:
-  #   build: ./jenkins
-  #   environment:
-  #     JAVA_OPTS: "-Djava.awt.headless=true"
-  #   ports:
-  #     - "${JENKINS_HOST_SLAVE_AGENT_PORT}:50000"
-  #     - "${JENKINS_HOST_HTTP_PORT}:8080"
-  #   privileged: true
-  #   volumes:
-  #     - ${JENKINS_HOME}:/var/jenkins_home
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   networks:
-  #     - frontend
-  #     - backend
+  jenkins:
+    build: ./jenkins
+    environment:
+      JAVA_OPTS: "-Djava.awt.headless=true"
+    ports:
+      - "${JENKINS_HOST_SLAVE_AGENT_PORT}:50000"
+      - "${JENKINS_HOST_HTTP_PORT}:8080"
+    privileged: true
+    volumes:
+      - ${JENKINS_HOME}:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - frontend
+      - backend
 
   ### Grafana ################################################
   # grafana:
