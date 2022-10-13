@@ -5,6 +5,8 @@ networks:
     driver: ${NETWORKS_DRIVER}
   backend:
     driver: ${NETWORKS_DRIVER}
+  traefik_web:
+    external: true
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
@@ -452,6 +454,7 @@ services:
     networks:
       - frontend
       - backend
+      - traefik_web
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.nginx.loadbalancer.server.port=80"
@@ -463,6 +466,7 @@ services:
       - "traefik.http.routers.https.tls.certresolver=letsencrypt"
       # http router
       - "traefik.http.routers.http.rule=Host(`${ACME_DOMAIN}`, `www.${ACME_DOMAIN}`)"
+      - "traefik.http.routers.http.tls=true"
       - "traefik.http.routers.http.entrypoints=http"
       - "traefik.http.routers.http.middlewares=http-redirectscheme"
       - "traefik.http.routers.http.service=nginx"
@@ -636,8 +640,11 @@ services:
       - MYSQL_USER=${MARIADB_USER}
       - MYSQL_PASSWORD=${MARIADB_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+    labels:
+      - traefik.enable=false
     networks:
       - backend
+      - traefik_web
 
   ### PostgreSQL ###########################################
   # postgres:
@@ -1007,9 +1014,15 @@ services:
       - "${PMA_PORT}:80"
     depends_on:
       - "${PMA_DB_ENGINE}"
+    labels:
+      - traefik.http.routers.adminer.rule=Host(`${ACME_DOMAIN}`)
+      - traefik.http.routers.adminer.tls=true
+      - traefik.http.routers.adminer.tls.certresolver=lets-encrypt
+      - traefik.port=${PMA_PORT}
     networks:
       - frontend
       - backend
+      - traefik_web
 
   ### Adminer ###########################################
   adminer:
@@ -1916,6 +1929,7 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--accesslog.filepath=/data/access.log"
       # entrypoints
+      - "--entrypoints.web.address=:${TRAEFIK_HOST_HTTP_PORT}"
       - "--entrypoints.http.address=:${TRAEFIK_HOST_HTTP_PORT}"
       - "--entrypoints.http.http.redirections.entrypoint.to=https"
       - "--entrypoints.https.address=:${TRAEFIK_HOST_HTTPS_PORT}"
@@ -1931,6 +1945,7 @@ services:
     networks:
       - frontend
       - backend
+      - traefik_web
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`${ACME_DOMAIN}`)"
