@@ -1251,7 +1251,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     links:
       - proxy
-      - proxy2
+      # - proxy2
 
   ### Jenkins ###################################################
   jenkins:
