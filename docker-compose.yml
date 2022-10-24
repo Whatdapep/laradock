@@ -5,9 +5,9 @@ networks:
     driver: ${NETWORKS_DRIVER}
   backend:
     driver: ${NETWORKS_DRIVER}
-  # traefik_web:
-  #   external: true
-  #   driver: ${NETWORKS_DRIVER}
+  traefik_web:
+    # external: true
+    driver: ${NETWORKS_DRIVER}
 volumes:
   # mysql:
   #   driver: ${VOLUMES_DRIVER}
@@ -203,7 +203,7 @@ services:
     networks:
       - frontend
       - backend
-      # - traefik_web
+      - traefik_web
     links:
       - docker-in-docker
 
@@ -416,71 +416,68 @@ services:
   #     - backend
 
   ### NGINX Server #########################################
-  
-  nginx:
-    build:
-      context: ./nginx
-      args:
-        - CHANGE_SOURCE=${CHANGE_SOURCE}
-        - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
-        - PHP_UPSTREAM_PORT=${NGINX_PHP_UPSTREAM_PORT}
-        - http_proxy
-        - https_proxy
-        - no_proxy
-    volumes:
-      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
-      - ${NGINX_HOST_LOG_PATH}:/var/log/nginx
-      - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
-      - ${NGINX_SSL_PATH}:/etc/nginx/ssl
-    ports:
-      - "${NGINX_HOST_HTTP_PORT}:80"
-      - "${NGINX_HOST_HTTPS_PORT}:443"
-      - "${VARNISH_BACKEND_PORT}:81"
-    depends_on:
-      - php-fpm
-    networks:
-      - frontend
-      - backend
-
-
   # nginx:
   #   build:
   #     context: ./nginx
   #     args:
+  #       - CHANGE_SOURCE=${CHANGE_SOURCE}
   #       - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
   #       - PHP_UPSTREAM_PORT=${NGINX_PHP_UPSTREAM_PORT}
-  #       - CHANGE_SOURCE=${CHANGE_SOURCE}
+  #       - http_proxy
+  #       - https_proxy
+  #       - no_proxy
   #   volumes:
-  #     - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+  #     - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
   #     - ${NGINX_HOST_LOG_PATH}:/var/log/nginx
   #     - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
+  #     - ${NGINX_SSL_PATH}:/etc/nginx/ssl
+  #   ports:
+  #     - "${NGINX_HOST_HTTP_PORT}:80"
+  #     - "${NGINX_HOST_HTTPS_PORT}:443"
+  #     - "${VARNISH_BACKEND_PORT}:81"
   #   depends_on:
   #     - php-fpm
   #   networks:
   #     - frontend
   #     - backend
-  #     - traefik_web
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.services.nginx.loadbalancer.server.port=80"
-  #     # https router
-  #     - "traefik.http.routers.https.rule=Host(`${ACME_DOMAIN}`, `www.${ACME_DOMAIN}`)"
-  #     - "traefik.http.routers.https.entrypoints=https"
-  #     - "traefik.http.routers.https.middlewares=www-redirectregex"
-  #     - "traefik.http.routers.https.service=nginx"
-  #     - "traefik.http.routers.https.tls.certresolver=letsencrypt"
-  #     # http router
-  #     - "traefik.http.routers.http.rule=Host(`${ACME_DOMAIN}`, `www.${ACME_DOMAIN}`)"
-  #     - "traefik.http.routers.http.tls=true"
-  #     - "traefik.http.routers.http.entrypoints=http"
-  #     - "traefik.http.routers.http.middlewares=http-redirectscheme"
-  #     - "traefik.http.routers.http.service=nginx"
-  #     # middlewares
-  #     - "traefik.http.middlewares.www-redirectregex.redirectregex.permanent=true"
-  #     - "traefik.http.middlewares.www-redirectregex.redirectregex.regex=^https://www.(.*)"
-  #     - "traefik.http.middlewares.www-redirectregex.redirectregex.replacement=https://$$1"
-  #     - "traefik.http.middlewares.http-redirectscheme.redirectscheme.permanent=true"
-  #     - "traefik.http.middlewares.http-redirectscheme.redirectscheme.scheme=https"
+  nginx:
+    build:
+      context: ./nginx
+      args:
+        - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
+        - PHP_UPSTREAM_PORT=${NGINX_PHP_UPSTREAM_PORT}
+        - CHANGE_SOURCE=${CHANGE_SOURCE}
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      - ${NGINX_HOST_LOG_PATH}:/var/log/nginx
+      - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
+    depends_on:
+      - php-fpm
+    networks:
+      - frontend
+      - backend
+      - traefik_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.nginx.loadbalancer.server.port=80"
+      # https router
+      - "traefik.http.routers.https.rule=Host(`${ACME_DOMAIN}`, `www.${ACME_DOMAIN}`)"
+      - "traefik.http.routers.https.entrypoints=https"
+      - "traefik.http.routers.https.middlewares=www-redirectregex"
+      - "traefik.http.routers.https.service=nginx"
+      - "traefik.http.routers.https.tls.certresolver=letsencrypt"
+      # http router
+      - "traefik.http.routers.http.rule=Host(`${ACME_DOMAIN}`, `www.${ACME_DOMAIN}`)"
+      - "traefik.http.routers.http.tls=true"
+      - "traefik.http.routers.http.entrypoints=http"
+      - "traefik.http.routers.http.middlewares=http-redirectscheme"
+      - "traefik.http.routers.http.service=nginx"
+      # middlewares
+      - "traefik.http.middlewares.www-redirectregex.redirectregex.permanent=true"
+      - "traefik.http.middlewares.www-redirectregex.redirectregex.regex=^https://www.(.*)"
+      - "traefik.http.middlewares.www-redirectregex.redirectregex.replacement=https://$$1"
+      - "traefik.http.middlewares.http-redirectscheme.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.http-redirectscheme.redirectscheme.scheme=https"
 
   ### OpenResty Server #########################################
   #     openresty:
@@ -649,7 +646,7 @@ services:
       - traefik.enable=false
     networks:
       - backend
-      # - traefik_web
+      - traefik_web
 
   ### PostgreSQL ###########################################
   # postgres:
@@ -1027,7 +1024,7 @@ services:
     networks:
       - frontend
       - backend
-      # - traefik_web
+      - traefik_web
 
   ### Adminer ###########################################
   # adminer:
@@ -1246,14 +1243,14 @@ services:
   #     - frontend
 
   ### HAProxy ####################################
-  # haproxy:
-  #   build: ./haproxy
-  #   ports:
-  #     - "${HAPROXY_HOST_HTTP_PORT}:8085"
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   links:
-  #     - proxy
+  haproxy:
+    build: ./haproxy
+    ports:
+      - "${HAPROXY_HOST_HTTP_PORT}:8085"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    links:
+      - proxy
       # - proxy2
 
   ### Jenkins ###################################################
@@ -1599,7 +1596,7 @@ services:
       - 2375
     networks:
       - backend
-      # - traefik_web
+      - traefik_web
 
   ### NetData ################################################
   # netdata:
@@ -1924,43 +1921,43 @@ services:
   #         - fetchmail
 
   ### TRAEFIK #########################################
-  # traefik:
-  #   build:
-  #     context: ./traefik
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #     - ./traefik/data:/data
-  #   command:
-  #     - "--api"
-  #     - "--providers.docker.exposedbydefault=false"
-  #     - "--accesslog.filepath=/data/access.log"
-  #     # entrypoints
-  #     - "--entrypoints.web.address=:${TRAEFIK_HOST_HTTP_PORT}"
-  #     - "--entrypoints.http.address=:${TRAEFIK_HOST_HTTP_PORT}"
-  #     - "--entrypoints.http.http.redirections.entrypoint.to=https"
-  #     - "--entrypoints.https.address=:${TRAEFIK_HOST_HTTPS_PORT}"
-  #     - "--entrypoints.traefik.address=:${TRAEFIK_DASHBOARD_PORT}"
-  #     # certificatesresolvers
-  #     - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-  #     - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
-  #     - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http"
-  #   ports:
-  #     - "${TRAEFIK_HOST_HTTP_PORT}:${TRAEFIK_HOST_HTTP_PORT}"
-  #     - "${TRAEFIK_HOST_HTTPS_PORT}:${TRAEFIK_HOST_HTTPS_PORT}"
-  #     - "${TRAEFIK_DASHBOARD_PORT}:${TRAEFIK_DASHBOARD_PORT}"
-  #   networks:
-  #     - frontend
-  #     - backend
-  #     - traefik_web
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.traefik.rule=Host(`${ACME_DOMAIN}`)"
-  #     - "traefik.http.routers.traefik.entrypoints=traefik"
-  #     - "traefik.http.routers.traefik.service=api@internal"
-  #     - "traefik.http.routers.traefik.middlewares=access-auth"
-  #     - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-  #     - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
-  #     - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}"
+  traefik:
+    build:
+      context: ./traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/data:/data
+    command:
+      - "--api"
+      - "--providers.docker.exposedbydefault=false"
+      - "--accesslog.filepath=/data/access.log"
+      # entrypoints
+      - "--entrypoints.web.address=:${TRAEFIK_HOST_HTTP_PORT}"
+      - "--entrypoints.http.address=:${TRAEFIK_HOST_HTTP_PORT}"
+      - "--entrypoints.http.http.redirections.entrypoint.to=https"
+      - "--entrypoints.https.address=:${TRAEFIK_HOST_HTTPS_PORT}"
+      - "--entrypoints.traefik.address=:${TRAEFIK_DASHBOARD_PORT}"
+      # certificatesresolvers
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http"
+    ports:
+      - "${TRAEFIK_HOST_HTTP_PORT}:${TRAEFIK_HOST_HTTP_PORT}"
+      - "${TRAEFIK_HOST_HTTPS_PORT}:${TRAEFIK_HOST_HTTPS_PORT}"
+      - "${TRAEFIK_DASHBOARD_PORT}:${TRAEFIK_DASHBOARD_PORT}"
+    networks:
+      - frontend
+      - backend
+      - traefik_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`${ACME_DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=traefik"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=access-auth"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.access-auth.basicauth.realm=Login Required"
+      - "traefik.http.middlewares.access-auth.basicauth.users=${TRAEFIK_DASHBOARD_USER}"
 ### MOSQUITTO Broker #########################################
 # mosquitto:
 #   build:
